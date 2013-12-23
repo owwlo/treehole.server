@@ -1,0 +1,16 @@
+{
+  "name": "treehole",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "3.4.4",
+    "jade": "*",
+    "mongodb": ">= 0.9.9",
+    "connect-mongo": ">= 0.1.9",
+    "connect": "1.8.5",
+    "mongoose": "*"
+  }
+}
