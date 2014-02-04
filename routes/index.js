@@ -1,24 +1,46 @@
 var ItItem = require('../models/ititem');
+var GoogleUser = require('../models/googleuser');
 var Url = require('url');
 var Util = require('util');
 var querystring = require('querystring');
+var passport = require('passport');
 
+function ensureAuthenticated(req, res, next) {
+	if (req.isAuthenticated()) { return next(); }
+	res.redirect('/login');
+}
 
 module.exports = function(app) { 
-  app.get('/', function(req, res) { 
-    res.render('index', { 
-      title: '首页' 
-    }); 
-  }); 
-   
-	app.get('/reg', function(req, res) { 
-		res.render('reg', { 
-			title: '用户注册', 
+	app.get('/', ensureAuthenticated, function(req, res) { 
+		res.render('index', { 
+			title: '首页' 
+		}); 
+	}); 	
+
+	app.get('/login', function(req, res) { 
+		res.render('login', { 
 		}); 
 	}); 
 
-	app.get('/hello', function (req, res) {
-		res.send('this time is ' +new Date().toString());
+	app.get('/auth/google', 
+		passport.authenticate('google', { failureRedirect: '/login' }),
+		function(req, res) {
+	});
+
+	app.get('/auth/google/return', 
+		passport.authenticate('google', { failureRedirect: '/login' }),
+		function(req, res) {
+			//res.render('account', {user: req.user});
+			res.redirect('/app');
+		});
+
+	app.get('/app', ensureAuthenticated, function(req, res){
+		res.render('app', {user: req.user});
+	});
+
+	app.get('/logout', function(req, res){
+		req.logout();
+		res.redirect('/login');
 	});
 
 	app.get('/hiddenbyme/:uid', function (req, res) {
@@ -80,9 +102,6 @@ module.exports = function(app) {
 		var lon5_str = Math.round(lon*100000)/100000 + '';
 		var lat3_str = Math.round(lat*1000)/1000 + '';
 
-		console.log("query: uid="+ uid + " lon="+ lon + " lat="+lat);
-		//res.send(Util.inspect(url_parts));
-
 		var fetch_item = ItItem.findOne({lon5: lon5_str, lat3: lat3_str}, function (err, ititem) {
 			if(ititem != 'undefined' && ititem.isFound == false && ititem.deviceId != uid) {
 				console.log(ititem._id);
@@ -100,14 +119,13 @@ module.exports = function(app) {
 		});
 	});
 
-  app.post('/postit/:uid', function (req, res) {
+  app.post('/postit', ensureAuthenticated, function (req, res) {
   	var reqJson = (req.body);
-  	var deviceId = req.params.uid;
   	var lon = reqJson.lon;
   	var lat = reqJson.lat;
   	var content = reqJson.content;
-
-  	console.log("Request Json: " + reqJson.lon+ (reqJson));
+  	var user = req.user;
+  	var deviceId = "";
 
   	var newIt = new ItItem({
   		time: new Date(),
@@ -122,12 +140,15 @@ module.exports = function(app) {
   	});
   	newIt.save(function(err) { 
   		console.log(err);
+  		var returnJson = new Object();
 		if (err) { 
 			res.writeHead(500, {'Content-type': 'text/plain'});
 			res.end();
 			return;
 		}
-		res.writeHead(200, {'Content-type': 'text/plain'});
+		res.writeHead(200, { 'Content-Type': 'application/json' });
+		returnJson.state = "success";
+		res.write(JSON.stringify(returnJson));
 		res.end();
     }); 
   });

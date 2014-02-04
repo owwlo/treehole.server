@@ -1,5 +1,5 @@
 module.exports = {
-	cookieSecret: 'testitsecret',
+	cookieSecret: 'SECRET_SEEKIT',
 	db: 'treeholedb',
 	host: 'localhost', 
 };
